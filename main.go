@@ -238,6 +238,10 @@ func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 			if m.cursor < len(m.choices)-1 {
 				m.cursor++
 			}
+		case "g":
+			m.cursor = 0
+		case "G":
+			m.cursor = len(m.choices) - 1
 		case "enter":
 			if m.filePrompt {
 				m.textInput, _ = m.textInput.Update(msg)

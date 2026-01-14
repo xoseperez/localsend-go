@@ -15,7 +15,8 @@ import (
 var embeddedConfig embed.FS
 
 type Config struct {
-	NameOfDevice string
+	DeviceName   string `yaml:"device_name"`
+	NameOfDevice string // Actual device name used in runtime
 	Functions    struct {
 		HttpFileServer  bool `yaml:"http_file_server"`
 		LocalSendServer bool `yaml:"local_send_server"`
@@ -47,16 +48,23 @@ func generateRandomName() string {
 func init() {
 	bytes, err := os.ReadFile("internal/config/config.yaml")
 	if err != nil {
-		logger.Debug("读取外部配置文件失败，使用内置配置")
+		logger.Debug("Read config.yaml from file system failed, using embedded config. Error: " + err.Error())
 		bytes, err = embeddedConfig.ReadFile("config.yaml")
 		if err != nil {
-			logger.Failedf("无法读取嵌入式配置文件: %v", err)
+			logger.Failedf("Can not read embedded config file: %v", err)
 		}
 	}
 
 	if err := yaml.Unmarshal(bytes, &ConfigData); err != nil {
-		logger.Failedf("解析配置文件出错: %v", err)
+		logger.Failedf("Failed to parse config file: %v", err)
 	}
 
-	ConfigData.NameOfDevice = generateRandomName()
+	// Use configured device name if provided, otherwise generate a random one
+	if ConfigData.DeviceName != "" {
+		ConfigData.NameOfDevice = ConfigData.DeviceName
+		logger.Debug("Using configured device name: " + ConfigData.NameOfDevice)
+	} else {
+		ConfigData.NameOfDevice = generateRandomName()
+		logger.Debug("Using randomly generated device name: " + ConfigData.NameOfDevice)
+	}
 }

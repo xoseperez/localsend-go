@@ -137,7 +137,7 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		for {
 			n, err := r.Body.Read(buffer)
 			if err != nil && err != io.EOF {
-				done <- fmt.Errorf("读取文件失败: %w", err)
+				done <- fmt.Errorf("Read file failed: %w", err)
 				return
 			}
 			if n == 0 {
@@ -147,7 +147,7 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 
 			_, err = file.Write(buffer[:n])
 			if err != nil {
-				done <- fmt.Errorf("写入文件失败: %w", err)
+				done <- fmt.Errorf("Write file failed: %w", err)
 				return
 			}
 
@@ -160,14 +160,14 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	case err := <-done:
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Errorf("传输错误:", err)
+			logger.Errorf("Transfer error:", err)
 			// 删除未完成的文件
 			os.Remove(filePath)
 			return
 		}
 	case <-ctx.Done():
 		// 请求被取消
-		logger.Info("传输被取消")
+		logger.Info("Transfer canceled by client")
 		// 删除未完成的文件
 		os.Remove(filePath)
 		// 关闭连接
@@ -177,6 +177,6 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Success("文件保存到:", filePath)
+	logger.Success("File saved to:", filePath)
 	w.WriteHeader(http.StatusOK)
 }

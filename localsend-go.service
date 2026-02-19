@@ -1,0 +1,23 @@
+[Unit]
+Description=LocalSend Go - receive mode
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/localsend-go receive
+WorkingDirectory=/var/lib/localsend-go
+Restart=on-failure
+RestartSec=5
+
+# Create save directory if needed
+StateDirectory=localsend-go
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/localsend-go
+
+[Install]
+WantedBy=multi-user.target

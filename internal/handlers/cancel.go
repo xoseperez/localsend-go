@@ -12,21 +12,21 @@ var (
 	handlersLock   sync.RWMutex
 )
 
-// RegisterCancelHandler 注册取消处理函数
+// RegisterCancelHandler registers a cancel handler for a session
 func RegisterCancelHandler(sessionID string, cancelFunc func()) {
 	handlersLock.Lock()
 	defer handlersLock.Unlock()
 	cancelHandlers[sessionID] = cancelFunc
 }
 
-// UnregisterCancelHandler 注销取消处理函数
+// UnregisterCancelHandler unregisters the cancel handler for a session
 func UnregisterCancelHandler(sessionID string) {
 	handlersLock.Lock()
 	defer handlersLock.Unlock()
 	delete(cancelHandlers, sessionID)
 }
 
-// HandleCancel 处理取消请求
+// HandleCancel handles a cancel request
 func HandleCancel(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)

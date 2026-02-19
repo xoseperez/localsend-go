@@ -7,12 +7,12 @@ import (
 	"github.com/meowrain/localsend-go/internal/models"
 )
 
-// TestSelectDevice 测试 SelectDevice 函数
+// TestSelectDevice tests the SelectDevice function
 func TestSelectDevice(t *testing.T) {
-	// 创建一个设备更新 channel
+	// Create a device update channel
 	updates := make(chan []models.SendModel)
 
-	// 模拟设备更新
+	// Simulate device updates
 	go func() {
 		time.Sleep(1 * time.Second)
 		updates <- []models.SendModel{
@@ -27,13 +27,13 @@ func TestSelectDevice(t *testing.T) {
 		}
 	}()
 
-	// 调用 SelectDevice 函数
+	// Call the SelectDevice function
 	ip, err := SelectDevice(updates)
 	if err != nil {
 		t.Fatalf("SelectDevice returned an error: %v", err)
 	}
 
-	// 检查返回的 IP 是否在模拟的设备列表中
+	// Check if the returned IP is in the simulated device list
 	expectedIPs := map[string]bool{
 		"192.168.1.1": true,
 		"192.168.1.2": true,

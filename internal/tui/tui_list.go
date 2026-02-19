@@ -9,19 +9,19 @@ import (
 	bubbletea "github.com/charmbracelet/bubbletea"
 )
 
-// selectDevice 使用 Bubble Tea 库显示可供选择的设备列表并等待用户选择
+// SelectDevice displays a selectable device list using Bubble Tea and waits for user selection
 func SelectDevice(updates <-chan []models.SendModel) (string, error) {
-	// 创建一个带缓冲的内部 channel
+	// Create a buffered internal channel
 	internalUpdates := make(chan []models.SendModel, 100)
 
-	// 在后台持续从外部 channel 读取更新
+	// Continuously read updates from the external channel in the background
 	go func() {
 		for devices := range updates {
-			// 非阻塞方式发送到内部 channel
+			// Non-blocking send to internal channel
 			select {
 			case internalUpdates <- devices:
 			default:
-				// 如果 channel 满了，清空后重新发送
+				// If the channel is full, drain and resend
 				select {
 				case <-internalUpdates:
 				default:
@@ -31,7 +31,7 @@ func SelectDevice(updates <-chan []models.SendModel) (string, error) {
 		}
 	}()
 
-	// 创建模型和 Bubble Tea 程序
+	// Create model and Bubble Tea program
 	initModel := &model{
 		devices:    []models.SendModel{},
 		deviceMap:  make(map[string]models.SendModel),
@@ -52,31 +52,31 @@ func SelectDevice(updates <-chan []models.SendModel) (string, error) {
 	return "", nil
 }
 
-// model 结构体用于 Bubble Tea
+// model is the Bubble Tea model
 type model struct {
 	devices    []models.SendModel
-	deviceMap  map[string]models.SendModel // 使用 IP 作为键来存储设备
-	sortedKeys []string                    // 保持固定的显示顺序
+	deviceMap  map[string]models.SendModel // Uses IP as key to store devices
+	sortedKeys []string                    // Maintains a fixed display order
 	cursor     int
 	updates    <-chan []models.SendModel
 }
 
-// TickMsg 用于定期触发更新
+// TickMsg triggers periodic updates
 type TickMsg time.Time
 
-// Init 实现 Bubble Tea 的 Init 方法
+// Init implements the Bubble Tea Init method
 func (m model) Init() bubbletea.Cmd {
 	return tick()
 }
 
-// tick 每秒钟触发一次
+// tick fires once per second
 func tick() bubbletea.Cmd {
 	return bubbletea.Tick(time.Second, func(t time.Time) bubbletea.Msg {
 		return TickMsg(t)
 	})
 }
 
-// Update 实现 Bubble Tea 的 Update 方法
+// Update implements the Bubble Tea Update method
 func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 	switch msg := msg.(type) {
 	case bubbletea.KeyMsg:
@@ -85,14 +85,14 @@ func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 			return m, bubbletea.Quit
 		case "down", "j":
 			if len(m.devices) > 0 {
-				m.cursor = (m.cursor + 1) % len(m.devices) // 向下移动
+				m.cursor = (m.cursor + 1) % len(m.devices) // Move down
 			}
 		case "up", "k":
 			if len(m.devices) > 0 {
-				m.cursor = (m.cursor - 1 + len(m.devices)) % len(m.devices) // 向上移动
+				m.cursor = (m.cursor - 1 + len(m.devices)) % len(m.devices) // Move up
 			}
 		case "enter":
-			return m, bubbletea.Quit // 退出选择
+			return m, bubbletea.Quit // Confirm selection
 		}
 	case TickMsg:
 		select {
@@ -101,7 +101,7 @@ func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 				m.deviceMap = make(map[string]models.SendModel)
 			}
 
-			// 更新设备映射
+			// Update device map
 			changed := false
 			for _, device := range newDevices {
 				if _, exists := m.deviceMap[device.IP]; !exists {
@@ -111,7 +111,7 @@ func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 				}
 			}
 
-			// 只有在有新设备时才更新设备列表
+			// Only update the device list when new devices are found
 			if changed {
 				m.devices = make([]models.SendModel, 0, len(m.deviceMap))
 				for _, key := range m.sortedKeys {
@@ -120,7 +120,7 @@ func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 					}
 				}
 
-				// 确保光标不会超出设备列表范围
+				// Ensure cursor doesn't exceed device list bounds
 				if m.cursor >= len(m.devices) {
 					m.cursor = len(m.devices) - 1
 				}
@@ -132,7 +132,7 @@ func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 	return m, nil
 }
 
-// View 实现 Bubble Tea 的 View 方法
+// View implements the Bubble Tea View method
 func (m model) View() string {
 	if len(m.devices) == 0 {
 		return "Scanning Devices...\n\n Press Ctrl+C to exit"
@@ -140,9 +140,9 @@ func (m model) View() string {
 
 	s := "Found Devices:\n\n"
 	for i, device := range m.devices {
-		cursor := " " // 默认没有光标
+		cursor := " " // No cursor by default
 		if m.cursor == i {
-			cursor = ">" // 选中的光标
+			cursor = ">" // Selected cursor
 		}
 		s += fmt.Sprintf("%s %s (%s)\n", cursor, device.DeviceName, device.IP)
 	}

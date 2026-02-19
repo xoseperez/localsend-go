@@ -11,7 +11,7 @@ import (
 	probing "github.com/prometheus-community/pro-bing"
 )
 
-// getLocalIP 获取本地 IP 地址
+// GetLocalIP returns all local IPv4 addresses
 func GetLocalIP() ([]net.IP, error) {
 	ips := make([]net.IP, 0)
 	ifaces, err := net.Interfaces()
@@ -37,7 +37,7 @@ func GetLocalIP() ([]net.IP, error) {
 	return ips, nil
 }
 
-// pingScan 使用 ICMP ping 扫描局域网内的所有活动设备
+// pingScan uses ICMP ping to scan all active devices on the local network
 func pingScan() ([]string, error) {
 	var ips []string
 	ipGroup, err := GetLocalIP()
@@ -45,7 +45,7 @@ func pingScan() ([]string, error) {
 		return nil, err
 	}
 	for _, i := range ipGroup {
-		ip := i.Mask(net.IPv4Mask(255, 255, 255, 0)) // 假设是 24 子网掩码
+		ip := i.Mask(net.IPv4Mask(255, 255, 255, 0)) // Assumes /24 subnet mask
 		ip4 := ip.To4()
 		if ip4 == nil {
 			return nil, fmt.Errorf("invalid IPv4 address")
@@ -77,7 +77,7 @@ func pingScan() ([]string, error) {
 				}
 				err = pinger.Run()
 				if err != nil {
-					// 忽视发送ping失败
+					// Ignore ping send failures
 					return
 				}
 			}(targetIP)

@@ -14,7 +14,7 @@ type Logger struct {
 	*logrus.Logger
 }
 
-// LogConfig 定义日志配置选项
+// LogConfig defines logging configuration options
 type LogConfig struct {
 	Level        logrus.Level
 	Output       io.Writer
@@ -26,13 +26,13 @@ var (
 	logger *Logger
 	once   sync.Once
 
-	// ANSI 颜色代码
+	// ANSI color codes
 	green = "\033[32m"
 	red   = "\033[31m"
 	reset = "\033[0m"
 )
 
-// DefaultConfig 返回默认配置
+// DefaultConfig returns the default configuration
 func DefaultConfig() LogConfig {
 	return LogConfig{
 		Level:  logrus.InfoLevel,
@@ -45,7 +45,7 @@ func DefaultConfig() LogConfig {
 	}
 }
 
-// InitLogger 初始化 Logger
+// InitLogger initializes the Logger
 func InitLogger(config ...LogConfig) {
 	once.Do(func() {
 		cfg := DefaultConfig()
@@ -63,38 +63,38 @@ func InitLogger(config ...LogConfig) {
 	})
 }
 
-// checkLogger 确保 logger 已初始化
+// checkLogger ensures the logger is initialized
 func checkLogger() {
 	if logger == nil {
-		InitLogger() // 使用默认配置初始化
+		InitLogger() // Initialize with default config
 	}
 }
 
-// GetLogger 返回底层 Logger 实例
+// GetLogger returns the underlying Logger instance
 func GetLogger() *Logger {
 	checkLogger()
 	return logger
 }
 
-// Success 打印带有绿色 [Success] 标签的信息
+// Success prints a message with a green [Success] tag
 func Success(args ...interface{}) {
 	checkLogger()
 	logger.Infof("%s[Success]%s %s", green, reset, fmt.Sprint(args...))
 }
 
-// Successf 打印带有绿色 [Success] 标签的格式化信息
+// Successf prints a formatted message with a green [Success] tag
 func Successf(format string, args ...interface{}) {
 	checkLogger()
 	logger.Infof("%s[Success]%s %s", green, reset, fmt.Sprintf(format, args...))
 }
 
-// Failed 打印带有红色 [Failed] 标签的信息
+// Failed prints a message with a red [Failed] tag
 func Failed(args ...interface{}) {
 	checkLogger()
 	logger.Errorf("%s[Failed]%s %s", red, reset, fmt.Sprint(args...))
 }
 
-// Failedf 打印带有红色 [Failed] 标签的格式化信息
+// Failedf prints a formatted message with a red [Failed] tag
 func Failedf(format string, args ...interface{}) {
 	checkLogger()
 	logger.Errorf("%s[Failed]%s %s", red, reset, fmt.Sprintf(format, args...))
@@ -110,43 +110,43 @@ func Debugf(format string, args ...interface{}) {
 	logger.Debugf(format, args...)
 }
 
-// Info 打印信息级别日志
+// Info prints an info-level log message
 func Info(args ...interface{}) {
 	checkLogger()
 	logger.Info(args...)
 }
 
-// Infof 打印信息级别日志（支持格式化）
+// Infof prints a formatted info-level log message
 func Infof(format string, args ...interface{}) {
 	checkLogger()
 	logger.Infof(format, args...)
 }
 
-// Warn 打印警告级别日志
+// Warn prints a warn-level log message
 func Warn(args ...interface{}) {
 	checkLogger()
 	logger.Warn(args...)
 }
 
-// Warnf 打印警告级别日志（支持格式化）
+// Warnf prints a formatted warn-level log message
 func Warnf(format string, args ...interface{}) {
 	checkLogger()
 	logger.Warnf(format, args...)
 }
 
-// Error 打印错误级别日志
+// Error prints an error-level log message
 func Error(args ...interface{}) {
 	checkLogger()
 	logger.Error(args...)
 }
 
-// Errorf 打印错误级别日志（支持格式化）
+// Errorf prints a formatted error-level log message
 func Errorf(format string, args ...interface{}) {
 	checkLogger()
 	logger.Errorf(format, args...)
 }
 
-// WithFields 支持结构化日志
+// WithFields supports structured logging
 func WithFields(fields logrus.Fields) *Logger {
 	checkLogger()
 	return &Logger{logger.WithFields(fields).Logger}

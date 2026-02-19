@@ -22,9 +22,9 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-// SendFileToOtherDevicePrepare 函数
+// SendFileToOtherDevicePrepare prepares file metadata and sends it to the target device
 func SendFileToOtherDevicePrepare(ip string, path string) (*models.PrepareReceiveResponse, error) {
-	// 准备所有文件的元数据
+	// Prepare metadata for all files
 	files := make(map[string]models.FileInfo)
 	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -36,7 +36,7 @@ func SendFileToOtherDevicePrepare(ip string, path string) (*models.PrepareReceiv
 				return fmt.Errorf("error calculating SHA256 hash: %w", err)
 			}
 			fileMetadata := models.FileInfo{
-				ID:       info.Name(), // 使用文件名作为 ID
+				ID:       info.Name(), // Use filename as ID
 				FileName: info.Name(),
 				Size:     info.Size(),
 				FileType: filepath.Ext(filePath),
@@ -50,7 +50,7 @@ func SendFileToOtherDevicePrepare(ip string, path string) (*models.PrepareReceiv
 		return nil, fmt.Errorf("error walking the path: %w", err)
 	}
 
-	// 创建并填充 PrepareReceiveRequest 结构体
+	// Create and populate the PrepareReceiveRequest struct
 	request := models.PrepareReceiveRequest{
 		Info: models.Info{
 			Alias:       shared.Message.Alias,
@@ -65,19 +65,19 @@ func SendFileToOtherDevicePrepare(ip string, path string) (*models.PrepareReceiv
 		Files: files,
 	}
 
-	// 将请求结构体编码为JSON
+	// Encode the request struct to JSON
 	requestJson, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("error encoding request to JSON: %w", err)
 	}
 
-	// 发送POST请求
+	// Send POST request
 	url := fmt.Sprintf("https://%s:53317/api/localsend/v2/prepare-upload", ip)
 	client := &http.Client{
-		Timeout: 60 * time.Second, // 传输超时
+		Timeout: 60 * time.Second, // Transfer timeout
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // 忽略TLS
+				InsecureSkipVerify: true, // Skip TLS verification for local network
 			},
 		},
 	}
@@ -87,7 +87,7 @@ func SendFileToOtherDevicePrepare(ip string, path string) (*models.PrepareReceiv
 	}
 	defer resp.Body.Close()
 
-	// 检查响应
+	// Check response
 	if resp.StatusCode != http.StatusOK {
 		switch resp.StatusCode {
 		case 204:
@@ -102,7 +102,7 @@ func SendFileToOtherDevicePrepare(ip string, path string) (*models.PrepareReceiv
 		return nil, fmt.Errorf("failed to send metadata: received status code %d", resp.StatusCode)
 	}
 
-	// 解码响应JSON为PrepareReceiveResponse结构体
+	// Decode response JSON into PrepareReceiveResponse struct
 	var prepareReceiveResponse models.PrepareReceiveResponse
 	if err := json.NewDecoder(resp.Body).Decode(&prepareReceiveResponse); err != nil {
 		return nil, fmt.Errorf("error decoding response JSON: %w", err)
@@ -111,38 +111,38 @@ func SendFileToOtherDevicePrepare(ip string, path string) (*models.PrepareReceiv
 	return &prepareReceiveResponse, nil
 }
 
-// uploadFile 函数
+// uploadFile uploads a single file to the target device
 func uploadFile(ctx context.Context, ip, sessionId, fileId, token, filePath string) error {
-	// 打开要发送的文件
+	// Open the file to send
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("error opening file: %w", err)
 	}
 	defer file.Close()
 
-	// 获取文件大小用于进度条
+	// Get file size for progress bar
 	fileInfo, err := file.Stat()
 	if err != nil {
 		return fmt.Errorf("error getting file info: %w", err)
 	}
 	fileSize := fileInfo.Size()
 
-	// 创建进度条
+	// Create progress bar
 	bar := progressbar.NewOptions64(
 		fileSize,
-		progressbar.OptionSetDescription(fmt.Sprintf("上传 %s", filepath.Base(filePath))),
+		progressbar.OptionSetDescription(fmt.Sprintf("Uploading %s", filepath.Base(filePath))),
 		progressbar.OptionSetWidth(15),
 		progressbar.OptionShowBytes(true),
-		progressbar.OptionThrottle(time.Second), // 降低刷新频率，减少闪烁
+		progressbar.OptionThrottle(time.Second), // Reduce refresh rate to minimize flicker
 		progressbar.OptionShowCount(),
-		progressbar.OptionClearOnFinish(), // 完成时清除进度条
+		progressbar.OptionClearOnFinish(), // Clear progress bar on completion
 		progressbar.OptionSetRenderBlankState(true),
-		progressbar.OptionSetPredictTime(true), // 预测剩余时间
-		progressbar.OptionFullWidth(),          // 使用全宽显示
+		progressbar.OptionSetPredictTime(true), // Predict remaining time
+		progressbar.OptionFullWidth(),          // Use full width display
 		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "█", // 使用实心方块
+			Saucer:        "█",
 			SaucerHead:    "█",
-			SaucerPadding: "░", // 使用灰色方块作为背景
+			SaucerPadding: "░",
 			BarStart:      "|",
 			BarEnd:        "|",
 		}),
@@ -151,19 +151,19 @@ func uploadFile(ctx context.Context, ip, sessionId, fileId, token, filePath stri
 		}),
 	)
 
-	// 构建文件上传的 URL
+	// Build the file upload URL
 	uploadURL := fmt.Sprintf("https://%s:53317/api/localsend/v2/upload?sessionId=%s&fileId=%s&token=%s",
 		ip, sessionId, fileId, token)
 
-	// 使用 pipe 来避免将整个文件加载到内存中
+	// Use a pipe to avoid loading the entire file into memory
 	pr, pw := io.Pipe()
 
-	// 创建一个错误通道来传递上传过程中的错误
+	// Create an error channel to propagate upload errors
 	uploadErr := make(chan error, 1)
 
 	go func() {
 		defer pw.Close()
-		// 在新的 goroutine 中写入文件数据
+		// Write file data in a goroutine
 		_, err := io.Copy(io.MultiWriter(pw, bar), file)
 		if err != nil {
 			uploadErr <- err
@@ -171,12 +171,12 @@ func uploadFile(ctx context.Context, ip, sessionId, fileId, token, filePath stri
 		}
 	}()
 
-	// 创建带有 TLS 配置的 HTTP 客户端
+	// Create HTTP client with TLS config
 	client := &http.Client{
 		Timeout: 30 * time.Minute,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // 跳过证书验证
+				InsecureSkipVerify: true, // Skip certificate verification for local network
 			},
 			MaxIdleConns:       100,
 			IdleConnTimeout:    90 * time.Second,
@@ -184,7 +184,7 @@ func uploadFile(ctx context.Context, ip, sessionId, fileId, token, filePath stri
 		},
 	}
 
-	// 创建请求
+	// Create request
 	req, err := http.NewRequestWithContext(ctx, "POST", uploadURL, pr)
 	if err != nil {
 		return fmt.Errorf("error creating POST request: %w", err)
@@ -193,16 +193,16 @@ func uploadFile(ctx context.Context, ip, sessionId, fileId, token, filePath stri
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.ContentLength = fileSize
 
-	// 使用自定义客户端发送请求，而不是 http.DefaultClient
+	// Send request using custom client instead of http.DefaultClient
 	resp, err := client.Do(req)
 
-	// 检查是否被取消
+	// Check if cancelled
 	select {
 	case <-ctx.Done():
-		return fmt.Errorf("传输已取消")
+		return fmt.Errorf("transfer cancelled")
 	case err := <-uploadErr:
 		if err != nil {
-			return fmt.Errorf("上传出错: %w", err)
+			return fmt.Errorf("upload error: %w", err)
 		}
 	default:
 		if err != nil {
@@ -210,7 +210,7 @@ func uploadFile(ctx context.Context, ip, sessionId, fileId, token, filePath stri
 		}
 	}
 
-	// 检查响应
+	// Check response
 	if resp.StatusCode != http.StatusOK {
 		switch resp.StatusCode {
 		case 400:
@@ -225,12 +225,12 @@ func uploadFile(ctx context.Context, ip, sessionId, fileId, token, filePath stri
 		return fmt.Errorf("file upload failed: received status code %d", resp.StatusCode)
 	}
 
-	fmt.Println() // 添加换行，让进度条显示更清晰
+	fmt.Println() // Add newline for cleaner progress bar display
 	logger.Success("File uploaded successfully")
 	return nil
 }
 
-// SendFile 函数
+// SendFile discovers devices, lets the user pick one, and sends the file
 func SendFile(path string) error {
 	updates := make(chan []models.SendModel)
 	discovery.ListenAndStartBroadcasts(updates)
@@ -244,16 +244,16 @@ func SendFile(path string) error {
 		return err
 	}
 
-	// 创建一个用于取消的 context
+	// Create a context for cancellation
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 使用共享的 HTTP 服务器来处理取消请求
+	// Use the shared HTTP server to handle cancel requests
 	logger.Info("Registering cancel handler for session: ", response.SessionID)
 	RegisterCancelHandler(response.SessionID, cancel)
 	defer UnregisterCancelHandler(response.SessionID)
 
-	// 遍历目录和子文件
+	// Walk directory and upload files
 	err = filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -281,27 +281,27 @@ func SendFile(path string) error {
 func NormalSendHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Handling upload request...") // Debug log - request start
 
-	// 限制表单数据大小（此处设置为 10 MB，可根据需要调整）
+	// Limit form data size (10 MB, adjustable as needed)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		http.Error(w, fmt.Sprintf("解析表单失败: %v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Failed to parse form: %v", err), http.StatusBadRequest)
 		return
 	}
 
-	// 获取上传的目录名 (来自前端 hidden input)
+	// Get the uploaded directory name (from frontend hidden input)
 	uploadedDirName := r.FormValue("directoryName")
 	logger.Debugf("directoryName from form: '%s'\n", uploadedDirName) // Debug log - directoryName value
 
-	// 获取所有上传的文件
+	// Get all uploaded files
 	files := r.MultipartForm.File["file"]
 	if len(files) == 0 {
-		http.Error(w, "未上传任何文件", http.StatusBadRequest)
+		http.Error(w, "No files uploaded", http.StatusBadRequest)
 		return
 	}
 
 	uploadDir := config.ConfigData.SaveDir
-	finalUploadDir := uploadDir // 默认最终上传目录
+	finalUploadDir := uploadDir // Default final upload directory
 
-	// 如果前端传递了目录名且不为空，才创建以目录名命名的子目录
+	// Only create a subdirectory if the frontend provided a non-empty directory name
 	if uploadedDirName != "" {
 		finalUploadDir = filepath.Join(uploadDir, uploadedDirName)
 	} else {
@@ -309,47 +309,47 @@ func NormalSendHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.Debugf("Final upload directory: '%s'\n", finalUploadDir)
 
-	// 创建最终的上传目录（如果不存在）
+	// Create the final upload directory if it doesn't exist
 	if err := os.MkdirAll(finalUploadDir, os.ModePerm); err != nil {
-		http.Error(w, fmt.Sprintf("无法创建上传目录: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to create upload directory: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// 遍历所有文件进行保存
+	// Iterate over all files and save them
 	for _, fileHeader := range files {
-		// 打开上传的文件
+		// Open the uploaded file
 		file, err := fileHeader.Open()
 		if err != nil {
-			http.Error(w, fmt.Sprintf("无法打开文件: %v", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Failed to open file: %v", err), http.StatusInternalServerError)
 			return
 		}
 		defer file.Close()
 
-		// 拼接目标路径 (使用 finalUploadDir 作为根目录)
+		// Build destination path (using finalUploadDir as root)
 		destPath := filepath.Join(finalUploadDir, fileHeader.Filename)
 		logger.Infof("Saving file '%s' to destPath: '%s'\n", fileHeader.Filename, destPath) // Debug log - file dest path
 
-		// 创建目标目录（如果不存在）
+		// Create destination directory if it doesn't exist
 		if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
-			http.Error(w, fmt.Sprintf("无法创建目录: %v", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Failed to create directory: %v", err), http.StatusInternalServerError)
 			return
 		}
 
-		// 创建目标文件
+		// Create destination file
 		dst, err := os.Create(destPath)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("无法创建文件: %v", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Failed to create file: %v", err), http.StatusInternalServerError)
 			return
 		}
 		defer dst.Close()
 
-		// 将上传的文件内容写入目标文件
+		// Write uploaded file content to destination file
 		if _, err := io.Copy(dst, file); err != nil {
-			http.Error(w, fmt.Sprintf("保存文件失败: %v", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Failed to save file: %v", err), http.StatusInternalServerError)
 			return
 		}
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "文件上传成功，共计 %d 个文件，上传到目录: %s\n", len(files), finalUploadDir)
+	fmt.Fprintf(w, "Upload successful: %d file(s) saved to %s\n", len(files), finalUploadDir)
 }

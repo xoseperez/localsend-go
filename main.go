@@ -71,7 +71,7 @@ func getPathSuggestions(input string) []string {
 func (m textInputModel) Update(msg bubbletea.Msg) (textInputModel, bubbletea.Cmd) {
 	switch msg := msg.(type) {
 	case bubbletea.MouseMsg:
-		// 忽略鼠标事件
+		// Ignore mouse events
 		return m, nil
 
 	case bubbletea.KeyMsg:
@@ -107,9 +107,9 @@ func (m textInputModel) Update(msg bubbletea.Msg) (textInputModel, bubbletea.Cmd
 
 		default:
 			if msg.String() != "enter" && msg.String() != "home" && msg.String() != "end" {
-				// 只允许输入有效的路径字符
+				// Only allow valid path characters
 				char := msg.String()
-				// 检查是否是有效的路径字符
+				// Check if the character is a valid path character
 				if char == "." || char == "/" || char == "\\" || char == ":" || char == "-" || char == "_" ||
 					(char >= "a" && char <= "z") || (char >= "A" && char <= "Z") || (char >= "0" && char <= "9") {
 					m.value = m.value[:m.cursor] + char + m.value[m.cursor:]
@@ -283,11 +283,11 @@ func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 func (m model) View() string {
 	var s strings.Builder
 
-	// 标题
+	// Title
 	s.WriteString(titleStyle.Render("💫 LocalSend CLI 💫"))
 	s.WriteString("\n\n")
 
-	// 菜单
+	// Menu
 	if m.mode == "" {
 		for i, choice := range m.choices {
 			if i == m.cursor {
@@ -298,11 +298,11 @@ func (m model) View() string {
 			s.WriteString("\n")
 		}
 	} else {
-		// 显示当前模式
+		// Display current mode
 		s.WriteString(menuStyle.Render(m.mode))
 		s.WriteString("\n\n")
 
-		// 文件路径输入
+		// File path input
 		if m.filePrompt {
 			s.WriteString(inputPromptStyle.Render("Enter file path: "))
 			s.WriteString(inputStyle.Render(m.textInput.View()))
@@ -337,11 +337,11 @@ func WebServerMode(httpServer *http.ServeMux, port int) {
 	}
 	qr, err := qrcode.New(fmt.Sprintf("http://%s:%d", localIP, port), qrcode.Highest)
 	if err != nil {
-		fmt.Println("生成二维码失败:", err)
+		fmt.Println("Failed to generate QR code:", err)
 		return
 	}
 
-	// 打印二维码到终端
+	// Print QR code to terminal
 	fmt.Println(qr.ToString(false))
 	select {}
 }
@@ -434,7 +434,7 @@ func main() {
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-signalChan
-		fmt.Println("\n收到中断信号，正在退出...")
+		fmt.Println("\nReceived interrupt signal, exiting...")
 		os.Exit(0)
 	}()
 	logger.InitLogger()
@@ -458,7 +458,7 @@ func main() {
 			log.Fatalf("Server failed: %v", err)
 		}
 	}()
-	// 参数解析
+	// Parse subcommands
 	flagParse(httpServer, port, &flagOpen)
 
 	if !flagOpen {

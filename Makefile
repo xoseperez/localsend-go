@@ -1,5 +1,5 @@
 # 项目名
-PROJECT_NAME := localsend_go
+PROJECT_NAME := localsend-go
 
 # 源代码目录
 SRC_DIR := .

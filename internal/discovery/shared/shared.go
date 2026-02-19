@@ -16,14 +16,20 @@ var (
 )
 
 // https://github.com/localsend/protocol?tab=readme-ov-file#71-device-type
-var Message = models.BroadcastMessage{
-	Alias:       config.ConfigData.NameOfDevice,
-	Version:     "2.0",
-	DeviceModel: utils.CheckOSType(),
-	DeviceType:  "headless",      // CLI工具使用headless类型
-	Fingerprint: "random-string", // 应该生成一个唯一的指纹
-	Port:        53317,
-	Protocol:    "http",
-	Download:    true,
-	Announce:    true,
+var Message models.BroadcastMessage
+
+// InitMessage populates Message from the loaded config. Must be called after
+// config.LoadConfig().
+func InitMessage() {
+	Message = models.BroadcastMessage{
+		Alias:       config.ConfigData.NameOfDevice,
+		Version:     "2.0",
+		DeviceModel: utils.CheckOSType(),
+		DeviceType:  "headless",      // CLI工具使用headless类型
+		Fingerprint: "random-string", // 应该生成一个唯一的指纹
+		Port:        53317,
+		Protocol:    "http",
+		Download:    true,
+		Announce:    true,
+	}
 }

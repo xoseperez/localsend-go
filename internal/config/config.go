@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-//go:embed config.yaml
+//go:embed localsend.yaml
 var embeddedConfig embed.FS
 
 type Config struct {
@@ -45,13 +45,30 @@ func generateRandomName() string {
 	return fmt.Sprintf("%s %s", adj, noun)
 }
 
-func init() {
-	bytes, err := os.ReadFile("internal/config/config.yaml")
-	if err != nil {
-		logger.Debug("Read config.yaml from file system failed, using embedded config. Error: " + err.Error())
-		bytes, err = embeddedConfig.ReadFile("config.yaml")
+// LoadConfig loads configuration from the given path. If path is empty, it
+// tries the default filesystem location. If reading from the filesystem fails,
+// it falls back to the embedded config.
+func LoadConfig(path string) {
+	var bytes []byte
+	var err error
+
+	if path != "" {
+		bytes, err = os.ReadFile(path)
 		if err != nil {
-			logger.Failedf("Can not read embedded config file: %v", err)
+			logger.Errorf("Failed to read config file %q: %v, falling back to embedded config", path, err)
+			bytes, err = embeddedConfig.ReadFile("localsend.yaml")
+			if err != nil {
+				logger.Failedf("Can not read embedded config file: %v", err)
+			}
+		}
+	} else {
+		bytes, err = os.ReadFile("localsend.yaml")
+		if err != nil {
+			logger.Debug("Read localsend.yaml failed, using embedded config. Error: " + err.Error())
+			bytes, err = embeddedConfig.ReadFile("localsend.yaml")
+			if err != nil {
+				logger.Failedf("Can not read embedded config file: %v", err)
+			}
 		}
 	}
 

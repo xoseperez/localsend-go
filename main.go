@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/meowrain/localsend-go/internal/config"
 	"github.com/meowrain/localsend-go/internal/discovery"
+	"github.com/meowrain/localsend-go/internal/discovery/shared"
 	"github.com/meowrain/localsend-go/internal/handlers"
 	"github.com/meowrain/localsend-go/internal/pkg/server"
 	"github.com/meowrain/localsend-go/internal/utils/logger"
@@ -369,41 +370,17 @@ func ExitMode() {
 }
 
 func flagParse(httpServer *http.ServeMux, port int, flagOpen *bool) {
-	showHelp := func() {
-		fmt.Println("Usage: <command> [arguments]")
-		fmt.Println("Commands:")
-		fmt.Println("  web                 Start Web mode")
-		fmt.Println("  send <file_path>    Start Send mode (file path required)")
-		fmt.Println("  receive             Start Receive mode")
-		fmt.Println("  help                Display this help information")
-		fmt.Println("Options:")
-		fmt.Println("  --help              Display this help information")
-		fmt.Println("  --port=<number>     Specify server port (default: 53317)")
-	}
-	flag.Usage = showHelp
-	// 解析标准flag参数
-	flag.Parse()
-
-	// 检查是否有 --help 参数
-	for _, arg := range os.Args {
-		if arg == "--help" || arg == "-h" {
-			showHelp()
-			ExitMode()
-		}
-	}
-
-	if len(os.Args) > 1 {
+	args := flag.Args()
+	if len(args) > 0 {
 		*flagOpen = true
-		mode := os.Args[1]
+		mode := args[0]
 
 		switch mode {
 		case "web":
 			WebServerMode(httpServer, port)
 		case "send":
-			filePath := ""
-			if len(os.Args) > 2 {
-				filePath = os.Args[2]
-				SendMode(filePath)
+			if len(args) > 1 {
+				SendMode(args[1])
 			} else {
 				logger.Error("Need file path")
 				ExitMode()
@@ -417,10 +394,38 @@ func flagParse(httpServer *http.ServeMux, port int, flagOpen *bool) {
 	}
 }
 
-var port int
+var (
+	port       int
+	configPath string
+)
+
+func showHelp() {
+	fmt.Println("Usage: localsend-go [options] <command> [arguments]")
+	fmt.Println()
+	fmt.Println("Commands:")
+	fmt.Println("  send <file_path>    Send a file to a device on the local network")
+	fmt.Println("  receive             Wait for incoming files from other devices")
+	fmt.Println("  web                 Start the web file server with QR code")
+	fmt.Println("  help                Display this help information")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --help              Display this help information")
+	fmt.Println("  --port=<number>     Specify server port (default: 53317)")
+	fmt.Println("  --config=<path>     Specify config file path (default: ./localsend.yaml)")
+	fmt.Println()
+	fmt.Println("Examples:")
+	fmt.Println("  localsend-go send photo.jpg          Send a file (interactive device selection)")
+	fmt.Println("  localsend-go send /path/to/file.zip  Send a file using an absolute path")
+	fmt.Println("  localsend-go receive                 Receive files from other devices")
+	fmt.Println("  localsend-go --port=8080 web         Start web server on port 8080")
+	fmt.Println()
+	fmt.Println("Running without arguments starts the interactive TUI.")
+}
 
 func init() {
 	flag.IntVar(&port, "port", 53317, "Port to listen on")
+	flag.StringVar(&configPath, "config", "", "Path to config file")
+	flag.Usage = showHelp
 }
 
 func main() {
@@ -433,6 +438,9 @@ func main() {
 		os.Exit(0)
 	}()
 	logger.InitLogger()
+	flag.Parse()
+	config.LoadConfig(configPath)
+	shared.InitMessage()
 
 	// Start HTTP server
 	httpServer := server.New()

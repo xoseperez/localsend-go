@@ -1,3 +1,5 @@
+save_dir: "./uploads"
+
 functions:
   http_file_server: true
   local_send_server: true

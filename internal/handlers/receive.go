@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/meowrain/localsend-go/internal/config"
 	"github.com/meowrain/localsend-go/internal/models"
 
 	"github.com/meowrain/localsend-go/internal/utils/clipboard"
@@ -80,7 +81,7 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 生成文件路径，保留文件扩展名
-	filePath := filepath.Join("uploads", fileName)
+	filePath := filepath.Join(config.ConfigData.SaveDir, fileName)
 	// 创建文件夹（如果不存在）
 	dir := filepath.Dir(filePath)
 	err := os.MkdirAll(dir, os.ModePerm)

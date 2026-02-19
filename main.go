@@ -313,7 +313,7 @@ func (m model) View() string {
 }
 
 func WebServerMode(httpServer *http.ServeMux, port int) {
-	err := os.MkdirAll("uploads", 0o755)
+	err := os.MkdirAll(config.ConfigData.SaveDir, 0o755)
 	if err != nil {
 		logger.Errorf("Failed to create uploads directory: %v", err)
 		return
@@ -347,7 +347,7 @@ func WebServerMode(httpServer *http.ServeMux, port int) {
 }
 
 func ReceiveMode() {
-	err := os.MkdirAll("uploads", 0o755)
+	err := os.MkdirAll(config.ConfigData.SaveDir, 0o755)
 	if err != nil {
 		logger.Errorf("Failed to create uploads directory: %v", err)
 		return

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/meowrain/localsend-go/internal/config"
 	"github.com/meowrain/localsend-go/internal/discovery"
 	"github.com/meowrain/localsend-go/internal/discovery/shared"
 	"github.com/meowrain/localsend-go/internal/models"
@@ -297,7 +298,7 @@ func NormalSendHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uploadDir := "./uploads"    // 基础上传目录
+	uploadDir := config.ConfigData.SaveDir
 	finalUploadDir := uploadDir // 默认最终上传目录
 
 	// 如果前端传递了目录名且不为空，才创建以目录名命名的子目录

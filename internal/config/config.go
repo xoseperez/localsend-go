@@ -17,6 +17,7 @@ var embeddedConfig embed.FS
 type Config struct {
 	DeviceName   string `yaml:"device_name"`
 	NameOfDevice string // Actual device name used in runtime
+	SaveDir      string `yaml:"save_dir"`
 	Functions    struct {
 		HttpFileServer  bool `yaml:"http_file_server"`
 		LocalSendServer bool `yaml:"local_send_server"`
@@ -83,5 +84,10 @@ func LoadConfig(path string) {
 	} else {
 		ConfigData.NameOfDevice = generateRandomName()
 		logger.Debug("Using randomly generated device name: " + ConfigData.NameOfDevice)
+	}
+
+	// Default save directory
+	if ConfigData.SaveDir == "" {
+		ConfigData.SaveDir = "./uploads"
 	}
 }

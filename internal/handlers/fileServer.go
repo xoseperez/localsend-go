@@ -7,10 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/meowrain/localsend-go/internal/config"
 	"github.com/meowrain/localsend-go/templates"
 )
-
-const uploadDir = "./uploads"
 
 func GetFilesFromDir(dir string) ([]os.DirEntry, error) {
 	entries, err := os.ReadDir(dir)
@@ -22,11 +21,11 @@ func GetFilesFromDir(dir string) ([]os.DirEntry, error) {
 
 func FileServerHandler(w http.ResponseWriter, r *http.Request) {
 	file := strings.TrimPrefix(r.URL.Path, "/uploads/")
-	http.ServeFile(w, r, filepath.Join(uploadDir, file))
+	http.ServeFile(w, r, filepath.Join(config.ConfigData.SaveDir, file))
 }
 
 func IndexFileHandler(w http.ResponseWriter, r *http.Request) {
-	dirPath := filepath.Join(uploadDir, strings.TrimPrefix(r.URL.Path, "/uploads/"))
+	dirPath := filepath.Join(config.ConfigData.SaveDir, strings.TrimPrefix(r.URL.Path, "/uploads/"))
 
 	info, err := os.Stat(dirPath)
 	if os.IsNotExist(err) {

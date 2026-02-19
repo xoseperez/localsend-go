@@ -1,0 +1,12 @@
+# Device name displayed to other devices on the network.
+# If empty, a random name will be generated (e.g. "Happy Phoenix").
+device_name: ""
+
+# Directory where received files will be saved.
+save_dir: "./uploads"
+
+functions:
+  # Enable the HTTP file server (web mode).
+  http_file_server: true
+  # Enable the LocalSend protocol server (send/receive mode).
+  local_send_server: true
